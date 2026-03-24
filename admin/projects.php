@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (empty($_FILES['stl_file']['name'])) {
             $error = 'Selecione um arquivo STL.';
         } else {
-            $result = uploadSTL($projectId, $_FILES['stl_file'], getCurrentUserId());
+            $result = uploadModel($projectId, $_FILES['stl_file'], getCurrentUserId());
             if ($result['success']) {
                 $message = 'Arquivo STL enviado com sucesso!';
             } else {
@@ -352,13 +352,13 @@ $pageTitle = 'Projetos';
                                 <strong>Clique para selecionar</strong> ou arraste o arquivo
                             </p>
                             <p style="margin-top:4px;font-size:0.78rem;">
-                                Apenas .STL — Máximo 100MB
+                                Apenas .STL ou .3MF — Máximo 100MB
                             </p>
                             <p id="file-selected-name"
                                style="margin-top:8px;color:#2563eb;font-weight:600;
                                       font-size:0.875rem;display:none;"></p>
                             <input type="file" name="stl_file" id="stl-file-input"
-                                   accept=".stl" required>
+                                   accept=".stl,.3mf" required>
                         </div>
 
                         <button type="submit" class="btn btn-success w-100 mt-2"
@@ -369,7 +369,7 @@ $pageTitle = 'Projetos';
                                 <line x1="12" y1="3" x2="12" y2="15"/>
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                             </svg>
-                            Enviar Arquivo STL
+                            Enviar Arquivo
                         </button>
                     </form>
                 </div>
@@ -649,7 +649,7 @@ if (uploadZone) {
         e.preventDefault();
         this.classList.remove('drag-over');
         const file = e.dataTransfer.files[0];
-        if (file && file.name.toLowerCase().endsWith('.stl')) {
+        if (file && (file.name.toLowerCase().endsWith('.stl') || file.name.toLowerCase().endsWith('.3mf'))) {
             // Transfere o arquivo para o input
             const dt = new DataTransfer();
             dt.items.add(file);
@@ -659,7 +659,7 @@ if (uploadZone) {
             fileLabel.style.display = 'block';
             btnUpload.disabled = false;
         } else {
-            alert('Apenas arquivos .STL são aceitos.');
+            alert('Apenas arquivos .STL e .3MF são aceitos.');
         }
     });
 }

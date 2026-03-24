@@ -85,7 +85,7 @@ function getAllProjects(): array {
                COUNT(DISTINCT sf.id) AS file_count
         FROM projects p
         JOIN users u ON u.id = p.created_by
-        LEFT JOIN stl_files sf ON sf.project_id = p.id
+        LEFT JOIN model_files sf ON sf.project_id = p.id
         GROUP BY p.id
         ORDER BY p.created_at DESC
     ");
@@ -102,7 +102,7 @@ function getProjectById(int $id): ?array {
 function deleteProject(int $id): void {
     $db  = getDB();
     // Remove arquivos físicos antes de deletar do banco
-    $stmt = $db->prepare("SELECT stored_name FROM stl_files WHERE project_id = ?");
+    $stmt = $db->prepare("SELECT stored_name FROM model_files WHERE project_id = ?");
     $stmt->execute([$id]);
     foreach ($stmt->fetchAll() as $file) {
         $path = UPLOAD_DIR . $file['stored_name'];
@@ -113,61 +113,76 @@ function deleteProject(int $id): void {
 
 // ---------- ARQUIVOS STL ----------
 
-function uploadSTL(int $projectId, array $file, int $userId): array {
-    if ($file['error'] !== UPLOAD_ERR_OK) {
-        return ['success' => false, 'message' => 'Erro no upload do arquivo.'];
-    }
+function uploadModel(int $projectId, array $file, int $userId): array {
+    $db = getDB();
 
-    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    if ($ext !== 'stl') {
-        return ['success' => false, 'message' => 'Apenas arquivos .STL são permitidos.'];
+    $allowedExtensions = ['stl', '3mf'];
+    $originalName = $file['name'];
+    $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+
+    if (!in_array($ext, $allowedExtensions)) {
+        return ['success' => false, 'message' => 'Formato não suportado. Use STL ou 3MF.'];
     }
 
     if ($file['size'] > MAX_FILE_SIZE) {
-        return ['success' => false, 'message' => 'Arquivo excede o tamanho máximo de 100MB.'];
+        return ['success' => false, 'message' => 'Arquivo muito grande. Máximo: 100MB.'];
     }
 
-    if (!is_dir(UPLOAD_DIR)) {
-        mkdir(UPLOAD_DIR, 0755, true);
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        return ['success' => false, 'message' => 'Erro no upload.'];
     }
 
-    $storedName = uniqid('stl_', true) . '.stl';
+    // Validação de assinatura ZIP para 3MF
+    if ($ext === '3mf') {
+        $handle    = fopen($file['tmp_name'], 'rb');
+        $signature = fread($handle, 2);
+        fclose($handle);
+        if ($signature !== 'PK') {
+            return ['success' => false, 'message' => 'Arquivo 3MF inválido (não é um ZIP válido).'];
+        }
+    }
+
+    $storedName  = uniqid('model_', true) . '.' . $ext;
     $destination = UPLOAD_DIR . $storedName;
 
     if (!move_uploaded_file($file['tmp_name'], $destination)) {
-        return ['success' => false, 'message' => 'Falha ao mover o arquivo.'];
+        return ['success' => false, 'message' => 'Falha ao salvar o arquivo.'];
     }
 
-    $db = getDB();
-    $stmt = $db->prepare("INSERT INTO stl_files (project_id, original_name, stored_name, file_size, uploaded_by) VALUES (?, ?, ?, ?, ?)");
-    $stmt->execute([$projectId, $file['name'], $storedName, $file['size'], $userId]);
+    $stmt = $db->prepare("
+        INSERT INTO model_files (project_id, original_name, stored_name, file_type, file_size, uploaded_by)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ");
+    $stmt->execute([$projectId, $originalName, $storedName, $ext, $file['size'], $userId]);
 
     return ['success' => true, 'id' => $db->lastInsertId()];
 }
 
+
+
 function getFilesByProject(int $projectId): array {
     $db = getDB();
-    $stmt = $db->prepare("SELECT * FROM stl_files WHERE project_id = ? ORDER BY created_at DESC");
+    $stmt = $db->prepare("SELECT * FROM model_files WHERE project_id = ? ORDER BY created_at DESC");
     $stmt->execute([$projectId]);
     return $stmt->fetchAll();
 }
 
 function getFileById(int $fileId): ?array {
     $db = getDB();
-    $stmt = $db->prepare("SELECT * FROM stl_files WHERE id = ?");
+    $stmt = $db->prepare("SELECT * FROM model_files WHERE id = ?");
     $stmt->execute([$fileId]);
     return $stmt->fetch() ?: null;
 }
 
 function deleteSTLFile(int $fileId): void {
     $db = getDB();
-    $stmt = $db->prepare("SELECT stored_name FROM stl_files WHERE id = ?");
+    $stmt = $db->prepare("SELECT stored_name FROM model_files WHERE id = ?");
     $stmt->execute([$fileId]);
     $file = $stmt->fetch();
     if ($file) {
         $path = UPLOAD_DIR . $file['stored_name'];
         if (file_exists($path)) unlink($path);
-        $db->prepare("DELETE FROM stl_files WHERE id = ?")->execute([$fileId]);
+        $db->prepare("DELETE FROM model_files WHERE id = ?")->execute([$fileId]);
     }
 }
 
@@ -199,7 +214,7 @@ function getProjectsForUser(int $userId): array {
         SELECT p.*, COUNT(sf.id) AS file_count
         FROM projects p
         JOIN project_permissions pp ON pp.project_id = p.id
-        LEFT JOIN stl_files sf ON sf.project_id = p.id
+        LEFT JOIN model_files sf ON sf.project_id = p.id
         WHERE pp.user_id = ? AND p.active = 1
         GROUP BY p.id
         ORDER BY p.name

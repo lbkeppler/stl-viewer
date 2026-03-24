@@ -31,10 +31,11 @@ CREATE TABLE projects (
 ) ENGINE=InnoDB;
 
 -- Tabela de arquivos STL vinculados a projetos
-CREATE TABLE stl_files (
+CREATE TABLE model_files (
     id INT AUTO_INCREMENT PRIMARY KEY,
     project_id INT NOT NULL,
     original_name VARCHAR(255) NOT NULL,
+    file_type VARCHAR(10) NOT NULL DEFAULT 'stl',
     stored_name VARCHAR(255) NOT NULL,
     file_size BIGINT NOT NULL,
     uploaded_by INT NOT NULL,

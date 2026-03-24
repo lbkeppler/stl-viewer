@@ -11,6 +11,7 @@ define('DB_CHARSET', 'utf8mb4');
 
 define('BASE_URL', 'http://localhost/stl-viewer'); // Altere para sua URL
 define('UPLOAD_DIR', __DIR__ . '/../uploads/stl/');
+define('ALLOWED_EXTENSIONS', ['stl', '3mf']);
 define('MAX_FILE_SIZE', 100 * 1024 * 1024); // 100MB
 
 function getDB(): PDO {
