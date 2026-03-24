@@ -1,6 +1,6 @@
 <?php
 // ============================================
-// Endpoint seguro para servir arquivos STL
+// Endpoint seguro para servir arquivos STL/3MF
 // Valida sessão e permissão antes de servir
 // ============================================
 require_once __DIR__ . '/../config/database.php';
@@ -39,12 +39,34 @@ if (!file_exists($filePath)) {
     exit('Arquivo físico não encontrado.');
 }
 
+// ---- Detecta o tipo pelo nome armazenado ----
+$ext = strtolower(pathinfo($file['stored_name'], PATHINFO_EXTENSION));
+
+$contentTypes = [
+    'stl' => 'model/stl',
+    '3mf' => 'model/3mf',
+];
+
+$contentType = $contentTypes[$ext] ?? 'application/octet-stream';
+
+// ---- Validação de integridade para 3MF ----
+if ($ext === '3mf') {
+    $handle    = fopen($filePath, 'rb');
+    $signature = fread($handle, 2);
+    fclose($handle);
+
+    if ($signature !== 'PK') {
+        http_response_code(422);
+        exit('Arquivo 3MF corrompido ou inválido.');
+    }
+}
+
 // ---- Suporte a Range Request (arquivos grandes) ----
 $fileSize = filesize($filePath);
 $start    = 0;
 $end      = $fileSize - 1;
 
-header('Content-Type: model/stl');
+header('Content-Type: ' . $contentType);
 header('Content-Disposition: inline; filename="' .
        addslashes($file['original_name']) . '"');
 header('Accept-Ranges: bytes');
@@ -58,6 +80,13 @@ if (isset($_SERVER['HTTP_RANGE'])) {
              ? (int)$matches[2]
              : $fileSize - 1;
 
+    // Garante que o range é válido
+    if ($start > $end || $start >= $fileSize || $end >= $fileSize) {
+        http_response_code(416); // Range Not Satisfiable
+        header("Content-Range: bytes */$fileSize");
+        exit('Range inválido.');
+    }
+
     $length = $end - $start + 1;
     http_response_code(206);
     header("Content-Range: bytes $start-$end/$fileSize");
@@ -67,10 +96,10 @@ if (isset($_SERVER['HTTP_RANGE'])) {
 }
 
 // Serve o arquivo em chunks (evita estouro de memória)
-$fp      = fopen($filePath, 'rb');
+$fp     = fopen($filePath, 'rb');
 fseek($fp, $start);
-$remain  = $end - $start + 1;
-$chunk   = 1024 * 256; // 256KB por chunk
+$remain = $end - $start + 1;
+$chunk  = 1024 * 256; // 256KB por chunk
 
 while ($remain > 0 && !feof($fp)) {
     $read = min($chunk, $remain);

@@ -1,12 +1,12 @@
-# 🧊 STL Viewer — Sistema Web de Visualização de Arquivos STL
+# 🧊 STL Viewer — Sistema Web de Visualização de Modelos 3D
 
-Sistema web completo para visualização de arquivos STL no browser, com
-controle de acesso por usuário e senha, gerenciamento de projetos e
+Sistema web completo para visualização de arquivos STL e 3MF no browser,
+com controle de acesso por usuário e senha, gerenciamento de projetos e
 upload de modelos 3D. Sem necessidade de instalar nenhum software adicional.
 
 ![PHP](https://img.shields.io/badge/PHP-8.0+-777BB4?style=flat-square&logo=php&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-5.7+-4479A1?style=flat-square&logo=mysql&logoColor=white)
-![Three.js](https://img.shields.io/badge/Three.js-r128-black?style=flat-square&logo=three.js&logoColor=white)
+![Three.js](https://img.shields.io/badge/Three.js-r155-black?style=flat-square&logo=three.js&logoColor=white)
 ![License](https://img.shields.io/badge/Licença-MIT-green?style=flat-square)
 
 ---
@@ -33,31 +33,38 @@ upload de modelos 3D. Sem necessidade de instalar nenhum software adicional.
 - Dashboard com estatísticas gerais do sistema
 - Criação, edição e remoção de usuários
 - Criação, edição e remoção de projetos
-- Upload de arquivos STL por projeto (até 100MB)
+- Upload de arquivos **STL e 3MF** por projeto (até 100MB)
 - Upload via drag & drop ou seleção de arquivo
 - Controle granular de permissões: define quais usuários
   acessam quais projetos
-- Visualização prévia de qualquer arquivo STL cadastrado
+- Visualização prévia de qualquer arquivo cadastrado
 
 ### Usuário Final
 - Login seguro
 - Visualização apenas dos projetos liberados pelo administrador
-- Seleção do arquivo STL desejado dentro do projeto
+- Seleção do arquivo desejado dentro do projeto
 - Visualização completa do modelo 3D no browser,
   sem instalação de software
 
 ### Visualizador 3D
-- Renderização com Three.js (WebGL)
-- Modos: Sólido, Wireframe e Sólido + Wireframe
+- Renderização com Three.js r155 (WebGL) via ES Modules
+- Suporte a **STL** (binário e ASCII) e **3MF** (incluindo
+  arquivos exportados pelo Bambu Studio e PrusaSlicer)
+- **Detecção automática de multi-body em STL** — cada body
+  recebe uma cor distinta e é colorível individualmente
+- Modos de renderização: Sólido, Wireframe e Sólido + Wireframe
 - Iluminação profissional com 4 fontes de luz
 - Rotação, pan e zoom com o mouse
 - Reset de câmera automático
 - Grid e eixos XYZ toggleáveis
 - Personalização de cor do modelo e do fundo
-- Painel de informações: triângulos, dimensões e tamanho
+- **Painel de cores por body** para modelos STL multi-body
+- Correção automática de orientação (Z-up → Y-up)
+- Painel de informações: triângulos, dimensões, tamanho e
+  número de bodies/meshes
 - Suporte a tela cheia
 - Atalhos de teclado
-- Suporte a arquivos grandes via Range Request
+- Suporte a arquivos grandes via HTTP Range Request
 
 ---
 
@@ -67,8 +74,8 @@ upload de modelos 3D. Sem necessidade de instalar nenhum software adicional.
 |--------------|-------------------------------------|
 | Backend      | PHP 8.0+ (puro, sem frameworks)     |
 | Banco        | MySQL 5.7+ / MariaDB 10.3+          |
-| Frontend     | HTML5, CSS3, JavaScript ES6+        |
-| Renderização | Three.js r128 (WebGL)               |
+| Frontend     | HTML5, CSS3, JavaScript ES2022+     |
+| Renderização | Three.js r155 (WebGL, ES Modules)   |
 | Servidor     | Apache 2.4+ com mod_rewrite         |
 | Segurança    | PDO, bcrypt, sessões PHP, .htaccess |
 
@@ -77,12 +84,12 @@ upload de modelos 3D. Sem necessidade de instalar nenhum software adicional.
 ## 📦 Requisitos
 
 - PHP 8.0 ou superior
-- Extensões PHP: `pdo`, `pdo_mysql`, `fileinfo`
+- Extensões PHP: `pdo`, `pdo_mysql`, `fileinfo`, `zip`
 - MySQL 5.7+ ou MariaDB 10.3+
 - Apache com `mod_rewrite` habilitado
 - HTTPS recomendado em produção
-- Navegador moderno com suporte a WebGL
-  (Chrome 90+, Firefox 88+, Edge 90+, Safari 14+)
+- Navegador moderno com suporte a WebGL e ES Modules
+  (Chrome 89+, Firefox 108+, Edge 89+, Safari 15.4+)
 
 ---
 
@@ -94,7 +101,7 @@ upload de modelos 3D. Sem necessidade de instalar nenhum software adicional.
 git clone https://github.com/lbkeppler/stl-viewer.git
 ```
 
-Ou faça upload de todos os arquivos para o seu servidor via FTP/SFTP.
+Ou faça upload de todos os arquivos para o servidor via FTP/SFTP.
 
 ### 2. Crie o banco de dados
 
@@ -112,10 +119,10 @@ usuário administrador padrão.
 Edite o arquivo `config/database.php`:
 
 ```php
-define('DB_HOST', 'localhost');              // host do banco
-define('DB_NAME', 'stl_viewer');             // nome do banco
-define('DB_USER', 'seu_usuario');            // usuário do banco
-define('DB_PASS', 'sua_senha');              // senha do banco
+define('DB_HOST', 'localhost');               // host do banco
+define('DB_NAME', 'stl_viewer');              // nome do banco
+define('DB_USER', 'seu_usuario');             // usuário do banco
+define('DB_PASS', 'sua_senha');               // senha do banco
 
 define('BASE_URL', 'https://seudominio.com'); // sem barra no final!
 define('UPLOAD_DIR', __DIR__ . '/../uploads/stl/');
@@ -155,7 +162,7 @@ Senha:  Admin@123
 stl-viewer/
 ├── index.php                  # Página de login
 ├── dashboard.php              # Painel do usuário final
-├── viewer.php                 # Visualizador STL
+├── viewer.php                 # Visualizador STL/3MF
 ├── logout.php                 # Encerra sessão
 ├── .htaccess                  # Segurança e configurações Apache
 │
@@ -176,7 +183,7 @@ stl-viewer/
 │
 ├── api/
 │   ├── get_files.php          # Endpoint: lista arquivos de um projeto
-│   └── serve_stl.php          # Endpoint: serve arquivo STL com autenticação
+│   └── serve_stl.php          # Endpoint: serve STL/3MF com autenticação
 │
 ├── assets/
 │   ├── css/style.css          # Estilos globais do sistema
@@ -200,7 +207,7 @@ stl-viewer/
 2. Acesse **Usuários** e crie os usuários do sistema
 3. Acesse **Projetos** e crie um novo projeto
 4. Dentro do projeto clique em **Gerenciar**:
-   - Faça upload dos arquivos `.STL` do projeto
+   - Faça upload dos arquivos `.stl` ou `.3mf` do projeto
    - Na seção **Permissões**, conceda acesso aos usuários desejados
 5. O usuário já pode logar e visualizar o projeto
 
@@ -209,7 +216,7 @@ stl-viewer/
 1. Faça login com suas credenciais
 2. Na tela inicial aparecerão todos os projetos liberados para você
 3. Clique em **Abrir Projeto**
-4. Selecione o arquivo STL desejado
+4. Selecione o arquivo desejado
 5. Clique em **Visualizar** — o modelo abre no browser
 
 ---
@@ -226,15 +233,15 @@ stl-viewer/
 
 ### Atalhos de Teclado
 
-| Tecla | Ação                  |
-|-------|-----------------------|
-| `R`   | Reset da câmera       |
-| `W`   | Modo wireframe        |
-| `S`   | Modo sólido           |
-| `B`   | Modo sólido+wireframe |
-| `G`   | Mostrar/ocultar grid  |
-| `A`   | Mostrar/ocultar eixos |
-| `F`   | Tela cheia            |
+| Tecla | Ação                    |
+|-------|-------------------------|
+| `R`   | Reset da câmera         |
+| `W`   | Modo wireframe          |
+| `S`   | Modo sólido             |
+| `B`   | Modo sólido + wireframe |
+| `G`   | Mostrar/ocultar grid    |
+| `A`   | Mostrar/ocultar eixos   |
+| `F`   | Tela cheia              |
 
 ### Painel de Informações
 
@@ -243,16 +250,37 @@ O painel no canto inferior esquerdo exibe em tempo real:
 - Tamanho em disco
 - Número de triângulos da malha
 - Dimensões nos eixos X, Y e Z em milímetros
+- Número de bodies detectados (STL multi-body)
+- Número de meshes (3MF)
+
+### Multi-body (STL)
+
+Quando um arquivo STL contém múltiplos bodies desconectados,
+o visualizador os detecta automaticamente e:
+
+- Atribui uma cor distinta a cada body pela paleta padrão
+- Exibe o botão **Bodies** na toolbar
+- Abre um painel lateral com um seletor de cor individual
+  para cada body, permitindo personalização em tempo real
+
+### Formatos Suportados
+
+| Formato | Observações                                              |
+|---------|----------------------------------------------------------|
+| `.stl`  | Binário e ASCII, com detecção de multi-body              |
+| `.3mf`  | Incluindo arquivos do Bambu Studio e PrusaSlicer         |
 
 ---
 
 ## 🔒 Segurança
 
 - Senhas armazenadas com **bcrypt** (cost 12)
-- Proteção contra **session fixation** (regenerate_id no login)
+- Proteção contra **session fixation** (`regenerate_id` no login)
 - Todas as queries usam **PDO com prepared statements**
-- Arquivos STL servidos via endpoint PHP autenticado,
+- Arquivos servidos via endpoint PHP autenticado,
   nunca expostos diretamente
+- Validação de assinatura ZIP em arquivos 3MF no upload
+- Suporte a **HTTP Range Request** para arquivos grandes
 - Pasta `uploads/stl/` com execução de scripts bloqueada
 - Pastas `config/` e `includes/` bloqueadas via `.htaccess`
 - Headers de segurança: `X-Content-Type-Options`,
@@ -295,6 +323,17 @@ Acesse pelo browser e **apague o arquivo em seguida**.
 - Confirme que o tamanho não excede 100MB
 - Verifique se a pasta `uploads/stl/` tem permissão de escrita
 - Cheque se o PHP tem as configurações de upload corretas
+
+### Arquivo 3MF não carrega
+- Arquivos exportados pelo **Bambu Studio** e **PrusaSlicer**
+  são suportados a partir do Three.js r155
+- Se o erro persistir, re-exporte o modelo como STL pelo
+  slicer de origem
+
+### Visualizador não abre (erro de módulo)
+O visualizador usa **ES Modules** e requer HTTPS ou `localhost`.
+Não funciona em `http://` em produção — configure o certificado
+SSL no servidor.
 
 ### Erro de conexão com banco na Hostinger
 O host do banco na Hostinger raramente é `localhost`. Acesse
@@ -345,4 +384,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 <p align="center">
   Desenvolvido com ☕ e Three.js
+
+<center><a href="https://www.buymeacoffee.com/lbkeppler" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a></center>
 </p>

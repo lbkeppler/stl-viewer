@@ -1,31 +1,30 @@
 // ============================================
-// Utilitários extras do visualizador STL
-// Snapshot, medidas e exportação de tela
+// Utilitários extras do visualizador STL / 3MF
 // ============================================
 
 /**
- * Captura screenshot do canvas e faz download
+ * Captura screenshot do canvas e faz download.
+ * Requer preserveDrawingBuffer: true no renderer.
  */
 function takeSnapshot() {
     const canvas   = document.getElementById('stl-canvas');
-    const fileName = document.title.split('—')[0].trim() || 'stl-snapshot';
+    const fileName = document.title.split('—')[0].trim() || 'model-snapshot';
 
-    // Renderiza um frame extra para garantir qualidade
     renderer.render(scene, camera);
 
     canvas.toBlob(function(blob) {
         const url  = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href     = url;
-        link.download = fileName.replace(/\.stl$/i, '') + '_snapshot.png';
+        link.download = fileName.replace(/\.(stl|3mf)$/i, '') + '_snapshot.png';
         link.click();
         URL.revokeObjectURL(url);
     }, 'image/png', 1.0);
 }
 
 /**
- * Calcula e exibe o volume aproximado do modelo (em mm³)
- * Funciona apenas para malhas fechadas (watertight)
+ * Calcula volume aproximado em mm³ (apenas STL — malhas fechadas).
+ * Para 3MF não é aplicável diretamente pois o model é um Group.
  */
 function calcVolume(geometry) {
     let volume = 0;
@@ -50,16 +49,6 @@ function signedVolumeTriangle(p1, p2, p3) {
  */
 function formatNumber(n) {
     return n.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
-}
-
-/**
- * Gerencia estado dos botões da toolbar
- */
-function setActiveToolbarBtn(groupClass, activeId) {
-    document.querySelectorAll('.' + groupClass).forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.getElementById(activeId).classList.add('active');
 }
 
 /**
@@ -99,8 +88,8 @@ function showToast(message, type = 'info', duration = 2500) {
     };
 
     toast.style.borderColor = colors[type] || colors.info;
-    toast.textContent = message;
-    toast.style.opacity = '1';
+    toast.textContent       = message;
+    toast.style.opacity     = '1';
 
     clearTimeout(toast._timeout);
     toast._timeout = setTimeout(() => {

@@ -13,15 +13,15 @@ $db = getDB();
 // Estatísticas gerais
 $totalUsers    = $db->query("SELECT COUNT(*) FROM users WHERE role='user'")->fetchColumn();
 $totalProjects = $db->query("SELECT COUNT(*) FROM projects")->fetchColumn();
-$totalFiles    = $db->query("SELECT COUNT(*) FROM stl_files")->fetchColumn();
-$totalSize     = $db->query("SELECT COALESCE(SUM(file_size),0) FROM stl_files")->fetchColumn();
+$totalFiles    = $db->query("SELECT COUNT(*) FROM model_files")->fetchColumn();
+$totalSize     = $db->query("SELECT COALESCE(SUM(file_size),0) FROM model_files")->fetchColumn();
 
 // Últimos projetos criados
 $recentProjects = $db->query("
     SELECT p.*, u.name AS creator_name, COUNT(sf.id) AS file_count
     FROM projects p
     JOIN users u ON u.id = p.created_by
-    LEFT JOIN stl_files sf ON sf.project_id = p.id
+    LEFT JOIN model_files sf ON sf.project_id = p.id
     GROUP BY p.id
     ORDER BY p.created_at DESC
     LIMIT 6
