@@ -91,7 +91,7 @@ upload de modelos 3D. Sem necessidade de instalar nenhum software adicional.
 ### 1. Clone ou faça upload dos arquivos
 
 ```bash
-git clone https://github.com/seu-usuario/stl-viewer.git
+git clone https://github.com/lbkeppler/stl-viewer.git
 ```
 
 Ou faça upload de todos os arquivos para o seu servidor via FTP/SFTP.
