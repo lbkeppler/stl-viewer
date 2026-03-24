@@ -1,0 +1,17 @@
+# ============================================
+# Bloqueia execução de scripts na pasta uploads
+# Permite apenas leitura de arquivos .stl
+# ============================================
+
+Options -Indexes -ExecCGI
+AddHandler cgi-script .php .php3 .php4 .php5 .phtml .pl .py .jsp .asp .sh
+
+<FilesMatch "(?i)\.(?!stl$)[a-z]+$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Impede interpretação PHP nesta pasta
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>

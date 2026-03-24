@@ -1,0 +1,42 @@
+# ============================================
+# Configurações Apache — STL Viewer
+# ============================================
+
+Options -Indexes
+ServerSignature Off
+
+# Rewrite base
+RewriteEngine On
+RewriteBase /stl-viewer/
+
+# Força HTTPS (descomente em produção)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Protege arquivos sensíveis
+<FilesMatch "\.(sql|log|env|sh|bat)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Protege a pasta config
+<IfModule mod_rewrite.c>
+    RewriteRule ^config/ - [F,L]
+    RewriteRule ^includes/ - [F,L]
+</IfModule>
+
+# Headers de segurança
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Limite de upload (PHP override)
+<IfModule mod_php.c>
+    php_value upload_max_filesize 100M
+    php_value post_max_size 105M
+    php_value max_execution_time 120
+    php_value memory_limit 256M
+</IfModule>
