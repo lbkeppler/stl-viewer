@@ -8,6 +8,7 @@ upload de modelos 3D. Sem necessidade de instalar nenhum software adicional.
 ![MySQL](https://img.shields.io/badge/MySQL-5.7+-4479A1?style=flat-square&logo=mysql&logoColor=white)
 ![Three.js](https://img.shields.io/badge/Three.js-r155-black?style=flat-square&logo=three.js&logoColor=white)
 ![License](https://img.shields.io/badge/Licença-MIT-green?style=flat-square)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat-square&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/lbkeppler)
 
 ---
 
@@ -384,6 +385,4 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 <p align="center">
   Desenvolvido com ☕ e Three.js
-
-<center><a href="https://www.buymeacoffee.com/lbkeppler" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a></center>
 </p>
